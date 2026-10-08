@@ -1,0 +1,47 @@
+name: Build and release Windows executable
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install build dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Build executable
+        run: >-
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onefile
+          --windowed
+          --collect-all customtkinter
+          --name Dcode
+          --distpath dist
+          --workpath build
+          --specpath build
+          app.py
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create $env:GITHUB_REF_NAME dist/Dcode.exe
+          --title "Dcode $env:GITHUB_REF_NAME"
+          --notes "Versão experimental para testes no Windows. Baixe Dcode.exe e execute-o; Python não é necessário."
